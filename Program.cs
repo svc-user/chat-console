@@ -81,7 +81,11 @@ internal class Program
 
             if(string.IsNullOrWhiteSpace(_settings.ApiKey))
             {
+                Console.WriteLine("====================================================");
                 Console.WriteLine("No APIKey found. Set one first.");
+                Console.WriteLine("After setting one please restart the application.");
+                Console.WriteLine("====================================================");
+                Console.WriteLine();
                 SettingsHelper.ShowHelp();
                 continue;
             }
