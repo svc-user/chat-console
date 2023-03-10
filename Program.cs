@@ -20,7 +20,6 @@ internal class Program
         }
         settingsPath = Path.Combine(settingsPath, "settings.json");
         _settings = await Settings.FromFile(settingsPath);
-        //const string apiKey = "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";
 
         var apiClient = new ApiClient(_settings.ApiKey);
         var chatClient = new ChatClient(apiClient);

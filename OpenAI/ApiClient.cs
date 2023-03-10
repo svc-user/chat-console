@@ -24,16 +24,38 @@ public class ApiClient
 
     public async Task<ApiResponse<TRes>> Get<TRes>(string requestPath)
     {
-        var resp = await _httpClient.GetAsync(requestPath);
-        return await CreateResponse<TRes>(resp);
+        try
+        {
+            var resp = await _httpClient.GetAsync(requestPath);
+            return await CreateResponse<TRes>(resp);
+        }
+        catch (HttpRequestException ex)
+        {
+            var apiResp = new ApiResponse<TRes>();
+            apiResp.Success = false;
+            apiResp.Error = new() { Message = ex.Message };
+            apiResp.HttpCode = (int?)ex?.StatusCode ?? 0;
+            return apiResp;
+        }
     }
 
     public async Task<ApiResponse<TRes>> Post<TReq, TRes>(string requestPath, TReq requestObject)
     {
-        var postContent = JsonContent.Create<TReq>(requestObject, options: _defaultJsonOptions);
-        var resp = await _httpClient.PostAsync(requestPath, postContent);
+        try
+        {
+            var postContent = JsonContent.Create<TReq>(requestObject, options: _defaultJsonOptions);
+            var resp = await _httpClient.PostAsync(requestPath, postContent);
 
-        return await CreateResponse<TRes>(resp);
+            return await CreateResponse<TRes>(resp);
+        }
+        catch (HttpRequestException ex)
+        {
+            var apiResp = new ApiResponse<TRes>();
+            apiResp.Success = false;
+            apiResp.Error = new() { Message = ex.Message };
+            apiResp.HttpCode = (int?)ex?.StatusCode ?? 0;
+            return apiResp;
+        }
     }
 
     private async Task<ApiResponse<TRes>> CreateResponse<TRes>(HttpResponseMessage responseMessage)
@@ -71,5 +93,5 @@ public class ApiError
     public string Message { get; set; } = string.Empty; // "message": "None is not of type 'object' - 'logit_bias'",
     public string Type { get; set; } = string.Empty; //  "type": "invalid_request_error",
     public string? Param { get; set; } //  "param": null,
-    public int? Code { get; set; } // "code": null
+    public string? Code { get; set; } // "code": null
 }

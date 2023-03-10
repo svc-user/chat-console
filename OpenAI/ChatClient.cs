@@ -22,9 +22,11 @@ class ChatClient
 
         if(!resp.Success)
         {
-            await Console.Error.WriteLineAsync("API ERR: Msg" + resp?.Error?.Message);
-            await Console.Error.WriteLineAsync("API ERR: Type " + resp?.Error?.Type);
-            await Console.Error.WriteLineAsync("API ERR: Code " + resp?.Error?.Code);
+            await Console.Error.WriteLineAsync();
+            await Console.Error.WriteLineAsync("API ERR: Mesg: " + resp?.Error?.Message);
+            await Console.Error.WriteLineAsync("API ERR: Type: " + resp?.Error?.Type);
+            await Console.Error.WriteLineAsync("API ERR: Code: " + resp?.Error?.Code);
+            await Console.Error.WriteLineAsync();
         }
 
         return resp.Success ? resp.Response : null;
