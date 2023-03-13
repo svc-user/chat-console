@@ -6,6 +6,18 @@ namespace OpenAI;
 class ChatClient
 {
     private readonly ApiClient _apiClient;
+
+    private ChatRequest _requestParams = new();
+    private string _systemMessage = string.Empty;
+    private int _historyContextLength = 5;
+    private List<ChatMessage> _historyContext = new();
+
+    public delegate void MessageReceived(ChatResponse message);
+    public delegate void MessageError(ApiError error);
+    public MessageReceived OnMessageReceived { get; set; } = null!;
+    public MessageError OnMessageError { get; set; } = null!;
+
+
     /// <summary>
     /// 
     /// </summary>
@@ -16,20 +28,40 @@ class ChatClient
         _apiClient = apiClient;
     }
 
-    public async Task<ChatResponse?> Chat(ChatRequest chatRequest)
+    public void SetParams(ChatRequest requestParams, int historyContextLength = 5, string systemMessage = "")
     {
+        requestParams.Messages.Clear();
+        _requestParams = requestParams;
+        _systemMessage = systemMessage;
+        _historyContextLength = historyContextLength;
+    }
+
+    public async Task Chat(string message)
+    {
+        var userMessage = new ChatMessage { Role = "user", Content = message };
+
+        var chatRequest = _requestParams.Clone();
+        if (!string.IsNullOrWhiteSpace(_systemMessage))
+        {
+            chatRequest.Messages.Add(new ChatMessage { Role = "system", Content = _systemMessage });
+        }
+        if (_historyContext.Count > _historyContextLength * 2)
+        {
+            _historyContext = _historyContext.TakeLast(_historyContextLength * 2).ToList();
+        }
+        chatRequest.Messages.AddRange(_historyContext);
+        chatRequest.Messages.Add(userMessage);
+
         var resp = await _apiClient.Post<ChatRequest, ChatResponse>("chat/completions", chatRequest);
 
-        if(!resp.Success)
+        if (!resp.Success)
         {
-            await Console.Error.WriteLineAsync();
-            await Console.Error.WriteLineAsync("API ERR: Mesg: " + resp?.Error?.Message);
-            await Console.Error.WriteLineAsync("API ERR: Type: " + resp?.Error?.Type);
-            await Console.Error.WriteLineAsync("API ERR: Code: " + resp?.Error?.Code);
-            await Console.Error.WriteLineAsync();
+            OnMessageError?.Invoke(resp?.Error);
+            return;
         }
-
-        return resp.Success ? resp.Response : null;
+        _historyContext.Add(userMessage);
+        _historyContext.AddRange(resp.Response.Choices.Select(c => c.Message));
+        OnMessageReceived?.Invoke(resp.Response);
     }
 }
 

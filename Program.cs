@@ -20,17 +20,26 @@ internal class Program
         }
         settingsPath = Path.Combine(settingsPath, "settings.json");
         _settings = await Settings.FromFile(settingsPath);
+        Console.Title = _settings.ConsoleTitle;
+
 
         var apiClient = new ApiClient(_settings.ApiKey);
         var chatClient = new ChatClient(apiClient);
-
-        Console.Title = _settings.ConsoleTitle;
-        await EnterMainLoop(chatClient);
+        chatClient.SetParams(_settings.RequestParams, _settings.ContextLength, _settings.SystemMessage);
+        chatClient.OnMessageError += async err =>
+        {
+            await Console.Error.WriteLineAsync();
+            await Console.Error.WriteLineAsync("API ERR: Mesg: " + err?.Message);
+            await Console.Error.WriteLineAsync("API ERR: Type: " + err?.Type);
+            await Console.Error.WriteLineAsync("API ERR: Code: " + err?.Code);
+            await Console.Error.WriteLineAsync();
+        };
+        chatClient.OnMessageReceived += HandleMessageReceived;
+        await MainLoop(chatClient);
     }
 
-    private static async Task EnterMainLoop(ChatClient chatClient)
+    private static async Task MainLoop(ChatClient chatClient)
     {
-        var historyContext = new List<ChatMessage>();
         while (true)
         {
             Console.Write(_settings.UserNamePadded + " " + _settings.PS1 + " ");
@@ -62,6 +71,8 @@ internal class Program
                 await SettingsHelper.SetSetting(_settings, key, prompt[(keyIndex + key.Length + 1)..]);
 
                 Console.Title = _settings.ConsoleTitle;
+                chatClient.SetParams(_settings.RequestParams, _settings.ContextLength, _settings.SystemMessage);
+
                 continue;
             }
             else if (prompt.StartsWith("/reset "))
@@ -70,6 +81,8 @@ internal class Program
                 await SettingsHelper.ResetSetting(_settings, key);
 
                 Console.Title = _settings.ConsoleTitle;
+                chatClient.SetParams(_settings.RequestParams, _settings.ContextLength, _settings.SystemMessage);
+
                 continue;
             }
             else if (prompt == "/clear")
@@ -78,7 +91,7 @@ internal class Program
                 continue;
             }
 
-            if(string.IsNullOrWhiteSpace(_settings.ApiKey))
+            if (string.IsNullOrWhiteSpace(_settings.ApiKey))
             {
                 Console.WriteLine("====================================================");
                 Console.WriteLine("No APIKey found. Set one first.");
@@ -90,39 +103,41 @@ internal class Program
             }
 
 
-            var message = new ChatMessage();
-            message.Role = "user";
-            message.Content = prompt;
-
-            var req = _settings.RequestParams.Clone();
-            if (!string.IsNullOrWhiteSpace(_settings.SystemMessage))
-            {
-                req.Messages.Add(new ChatMessage { Role = "system", Content = _settings.SystemMessage });
-            }
-            req.Messages.AddRange(historyContext);
-            req.Messages.Add(message);
 
             Console.Write("Awaiting response...");
-            var resp = await chatClient.Chat(req);
-            Console.Write("\r".PadRight(21 + _settings.LongestName) + "\r"); // Clear line and return curser to start position.
+            await chatClient.Chat(prompt);
+        }
+    }
 
-            if (resp == null)
+    private static void HandleMessageReceived(ChatResponse chatResponse)
+    {
+        Console.Write("\r".PadRight(21 + _settings.LongestName) + "\r"); // Clear line and return curser to start position.
+
+        foreach (var choice in chatResponse.Choices)
+        {
+            if (chatResponse.Choices.Count > 1)
             {
-                Console.WriteLine("ERR: Chat request failed. Please try again :)");
-
-                continue;
+                Console.WriteLine("=======");
+                Console.WriteLine($"Reply {choice.Index + 1} of {chatResponse.Choices.Count}");
+                Console.WriteLine("=======");
             }
 
-            Console.WriteLine(_settings.BotNamePadded + " " + _settings.PS1 + " " + resp.Choices[0].Message.Content);
-            Console.WriteLine();
-
-            historyContext.Add(resp.Choices[0].Message);
-
-            while (historyContext.Count > _settings.ContextLength)
+            Console.Write(_settings.BotNamePadded + " " + _settings.PS1 + " ");
+            var messageLines = choice.Message.Content.Split("\n");
+            bool first = true;
+            foreach (var line in messageLines)
             {
-                historyContext.RemoveAt(0);
-            }
+                if (first)
+                {
+                    Console.WriteLine(line);
+                    first = false;
+                }
+                else
+                {
+                    Console.WriteLine("".PadRight(_settings.LongestName + 3) + line);
 
+                }
+            }
         }
     }
 }
