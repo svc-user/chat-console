@@ -36,7 +36,7 @@ class ChatClient
         _historyContextLength = historyContextLength;
     }
 
-    public async Task Chat(string message)
+    public async Task SendMessage(string message)
     {
         var userMessage = new ChatMessage { Role = "user", Content = message };
 
@@ -45,9 +45,9 @@ class ChatClient
         {
             chatRequest.Messages.Add(new ChatMessage { Role = "system", Content = _systemMessage });
         }
-        if (_historyContext.Count > _historyContextLength * 2)
+        if (_historyContext.Count > _historyContextLength)
         {
-            _historyContext = _historyContext.TakeLast(_historyContextLength * 2).ToList();
+            _historyContext = _historyContext.TakeLast(_historyContextLength).ToList();
         }
         chatRequest.Messages.AddRange(_historyContext);
         chatRequest.Messages.Add(userMessage);

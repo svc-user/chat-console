@@ -22,12 +22,15 @@ internal class Program
         _settings = await Settings.FromFile(settingsPath);
         Console.Title = _settings.ConsoleTitle;
 
+        Console.CancelKeyPress += Console_CancelKeyPress;
+
 
         var apiClient = new ApiClient(_settings.ApiKey);
         var chatClient = new ChatClient(apiClient);
         chatClient.SetParams(_settings.RequestParams, _settings.ContextLength, _settings.SystemMessage);
         chatClient.OnMessageError += async err =>
         {
+            await Console.Error.WriteLineAsync();
             await Console.Error.WriteLineAsync();
             await Console.Error.WriteLineAsync("API ERR: Mesg: " + err?.Message);
             await Console.Error.WriteLineAsync("API ERR: Type: " + err?.Type);
@@ -36,6 +39,13 @@ internal class Program
         };
         chatClient.OnMessageReceived += HandleMessageReceived;
         await MainLoop(chatClient);
+    }
+
+    private static void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
+    {
+        e.Cancel = true;
+        Console.Write("\r".PadRight(80 + _settings.LongestName) + "\r"); // Clear line and return curser to start position.
+        Console.Write(_settings.UserNamePadded + " " + _settings.PS1 + " ");
     }
 
     private static async Task MainLoop(ChatClient chatClient)
@@ -105,7 +115,7 @@ internal class Program
 
 
             Console.Write("Awaiting response...");
-            await chatClient.Chat(prompt);
+            await chatClient.SendMessage(prompt);
         }
     }
 
