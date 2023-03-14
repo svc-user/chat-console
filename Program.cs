@@ -129,6 +129,7 @@ internal class Program
         else if (prompt == "/clearcontext")
         {
             chatClient.ClearContext();
+            Console.WriteLine("System".PadRight(_settings.LongestName) + ": Conversational context cleared.");
             return true;
         }
 

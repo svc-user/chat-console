@@ -36,6 +36,9 @@ namespace chat_console
                 * /clear
                     Clear the chat buffer.
 
+                * /clearcontext
+                    Clear the conversation context. Good for starting a new conversation without references to past messages.
+
                 * /help
                     This message.
 
