@@ -35,6 +35,7 @@ namespace chat_console
             {
                 using var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
                 var settingsObject = await JsonSerializer.DeserializeAsync<Settings>(fileStream, _defaultJsonOptions);
+                if (settingsObject == null) throw new Exception("Unable to read settings file.");
 
                 settingsObject._path = path;
                 return settingsObject;

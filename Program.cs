@@ -59,47 +59,11 @@ internal class Program
                 continue;
             }
 
-            if (prompt == "/help")
+            if (await HandleBuiltinCommand(prompt, chatClient))
             {
-                SettingsHelper.ShowHelp();
-
                 continue;
             }
-            else if (prompt == "/quit" || prompt == "/exit")
-            {
-                Environment.Exit(0);
-            }
-            else if (prompt.StartsWith("/get "))
-            {
-                SettingsHelper.GetSettings(_settings, prompt[5..]);
-                continue;
-            }
-            else if (prompt.StartsWith("/set "))
-            {
-                var key = prompt[5..].Split(" ")[0];
-                var keyIndex = prompt.IndexOf(key);
-                await SettingsHelper.SetSetting(_settings, key, prompt[(keyIndex + key.Length + 1)..]);
 
-                Console.Title = _settings.ConsoleTitle;
-                chatClient.SetParams(_settings.RequestParams, _settings.ContextLength, _settings.SystemMessage);
-
-                continue;
-            }
-            else if (prompt.StartsWith("/reset "))
-            {
-                var key = prompt[7..].Split(" ")[0];
-                await SettingsHelper.ResetSetting(_settings, key);
-
-                Console.Title = _settings.ConsoleTitle;
-                chatClient.SetParams(_settings.RequestParams, _settings.ContextLength, _settings.SystemMessage);
-
-                continue;
-            }
-            else if (prompt == "/clear")
-            {
-                Console.Clear();
-                continue;
-            }
 
             if (string.IsNullOrWhiteSpace(_settings.ApiKey))
             {
@@ -119,6 +83,58 @@ internal class Program
         }
     }
 
+    private static async Task<bool> HandleBuiltinCommand(string prompt, ChatClient chatClient)
+    {
+        if (prompt == "/help")
+        {
+            SettingsHelper.ShowHelp();
+
+            return true;
+        }
+        else if (prompt == "/quit" || prompt == "/exit")
+        {
+            Environment.Exit(0);
+        }
+        else if (prompt.StartsWith("/get "))
+        {
+            SettingsHelper.GetSettings(_settings, prompt[5..]);
+            return true;
+        }
+        else if (prompt.StartsWith("/set "))
+        {
+            var key = prompt[5..].Split(" ")[0];
+            var keyIndex = prompt.IndexOf(key);
+            await SettingsHelper.SetSetting(_settings, key, prompt[(keyIndex + key.Length + 1)..]);
+
+            Console.Title = _settings.ConsoleTitle;
+            chatClient.SetParams(_settings.RequestParams, _settings.ContextLength, _settings.SystemMessage);
+
+            return true;
+        }
+        else if (prompt.StartsWith("/reset "))
+        {
+            var key = prompt[7..].Split(" ")[0];
+            await SettingsHelper.ResetSetting(_settings, key);
+
+            Console.Title = _settings.ConsoleTitle;
+            chatClient.SetParams(_settings.RequestParams, _settings.ContextLength, _settings.SystemMessage);
+
+            return true;
+        }
+        else if (prompt == "/clear")
+        {
+            Console.Clear();
+            return true;
+        }
+        else if (prompt == "/clearcontext")
+        {
+            chatClient.ClearContext();
+            return true;
+        }
+
+        return false;
+    }
+
     private static void HandleMessageReceived(ChatResponse chatResponse)
     {
         Console.Write("\r".PadRight(21 + _settings.LongestName) + "\r"); // Clear line and return curser to start position.
@@ -127,9 +143,8 @@ internal class Program
         {
             if (chatResponse.Choices.Count > 1)
             {
-                Console.WriteLine("=======");
+                Console.WriteLine("".PadRight(_settings.LongestName, '-'));
                 Console.WriteLine($"Reply {choice.Index + 1} of {chatResponse.Choices.Count}");
-                Console.WriteLine("=======");
             }
 
             Console.Write(_settings.BotNamePadded + " " + _settings.PS1 + " ");

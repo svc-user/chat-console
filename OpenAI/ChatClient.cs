@@ -13,7 +13,7 @@ class ChatClient
     private List<ChatMessage> _historyContext = new();
 
     public delegate void MessageReceived(ChatResponse message);
-    public delegate void MessageError(ApiError error);
+    public delegate void MessageError(ApiError? error);
     public MessageReceived OnMessageReceived { get; set; } = null!;
     public MessageError OnMessageError { get; set; } = null!;
 
@@ -35,6 +35,8 @@ class ChatClient
         _systemMessage = systemMessage;
         _historyContextLength = historyContextLength;
     }
+
+    public void ClearContext() => _historyContext.Clear();
 
     public async Task SendMessage(string message)
     {

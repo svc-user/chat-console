@@ -73,14 +73,14 @@ public class ApiClient
         }
 
         apiResp.Success = true;
-        apiResp.Response = JsonSerializer.Deserialize<TRes>(respBody, _defaultJsonOptions);
+        apiResp.Response = JsonSerializer.Deserialize<TRes>(respBody, _defaultJsonOptions)!;
 
         return apiResp;
 
     }
 }
 
-public class ApiResponse<TRes>
+public class ApiResponse<TRes> 
 {
     public TRes Response { get; set; } = default(TRes)!;
     public bool Success { get; set; }
