@@ -13,7 +13,7 @@ internal class Program
     private static Settings _settings = null!;
     private static async Task MainAsync(string[] args)
     {
-        var settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "chat-console");
+        var settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".chat-console");
         if (!Directory.Exists(settingsPath))
         {
             Directory.CreateDirectory(settingsPath);
