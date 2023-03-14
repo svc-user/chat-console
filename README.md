@@ -16,8 +16,8 @@ The console will echo the new setting. For the `ApiKey`-setting you'll have to c
 ## Help
 | Command | Description |
 | --- | --- |
-| `/get <filter>` | Show all settings matching filter. Filter is a case-insensitive string used to filter settings.\nThe filter `*` shows all settings. |
-| `/set <setting> <value>` | Sets a setting value. If successful the updated setting will be shown.\nThe setting key is case-insensitive, but must match the full setting name. |
+| `/get <filter>` | Show all settings matching filter. Filter is a case-insensitive string used to filter settings. The filter `*` shows all settings. |
+| `/set <setting> <value>` | Sets a setting value. If successful the updated setting will be shown. The setting key is case-insensitive, but must match the full setting name. |
 | `/reset <setting>` | Remove the value of a setting. The setting key is case-insensitive, but must match the full setting name. |
 | `/clear` | Clear the chat buffer window. |
 | `/clearcontext` | Clear the conversation context. Good for starting a new conversation without references to past messages. |
