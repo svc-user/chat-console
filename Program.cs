@@ -123,21 +123,35 @@ internal class Program
             }
 
             Console.Write(_settings.BotNamePadded + " " + _settings.PS1 + " ");
+            var padLength = _settings.LongestName + 3;
             var messageLines = choice.Message.Content.Split("\n");
             bool first = true;
             foreach (var line in messageLines)
             {
-                if (first)
+                if (!first)
                 {
-                    Console.WriteLine(line);
-                    first = false;
+                    Console.Write("".PadRight(padLength));
                 }
-                else
-                {
-                    Console.WriteLine("".PadRight(_settings.LongestName + 3) + line);
-
-                }
+                first = false;
+                PrintLine(padLength, line);
             }
         }
+    }
+
+    private static void PrintLine(int padding, string message)
+    {
+        int col = 0;
+        for (int i = 0; i < message.Length; i++, col++)
+        {
+            var ch = message[i];
+            Console.Write(ch);
+            if (col > 80 && ch == ' ')
+            {
+                Console.Write("\n".PadRight(padding + 1));
+                col = 0;
+            }
+            Thread.Sleep(4);
+        }
+        Console.WriteLine();
     }
 }
