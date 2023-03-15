@@ -10,7 +10,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="OpenAI\cl100k_base.tiktoken" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="favicon.ico" />
+    <Content Include="OpenAI\cl100k_base.tiktoken">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

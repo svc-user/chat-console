@@ -1,3 +1,5 @@
+using chat_console.OpenAI;
+using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using System.Text.Json.Serialization;
 
@@ -54,6 +56,9 @@ class ChatClient
         chatRequest.Messages.AddRange(_historyContext);
         chatRequest.Messages.Add(userMessage);
 
+        var tokens = chatRequest.CountMessagesTokens();
+        Trace.WriteLine($"Using {tokens} token on {chatRequest.Messages.Count} messages for request.");
+
         var resp = await _apiClient.Post<ChatRequest, ChatResponse>("chat/completions", chatRequest);
 
         if (!resp.Success)
@@ -71,7 +76,23 @@ public class ChatRequest
 {
     public ChatRequest Clone()
     {
-        return (ChatRequest)this.MemberwiseClone();
+        var req = (ChatRequest)this.MemberwiseClone();
+        req.Messages.Clear();
+        return req;
+    }
+
+    public int CountMessagesTokens()
+    {
+        var allMessages = string.Join(" ", Messages.Select(m => m.Content));
+        var tokens = TokenHelper.Tokenize(allMessages);
+
+        var reconstructedMessage = string.Join("", tokens.Select(t => t.Item2));
+        if (allMessages != reconstructedMessage)
+        {
+            Debugger.Break();
+        }
+
+        return tokens.Count;
     }
 
     /// <summary>
