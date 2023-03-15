@@ -1,11 +1,10 @@
-using chat_console.OpenAI;
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using System.Text.Json.Serialization;
 
 namespace OpenAI;
 
-class ChatClient
+public class ChatClient
 {
     private readonly ApiClient _apiClient;
 
@@ -84,9 +83,9 @@ public class ChatRequest
     public int CountMessagesTokens()
     {
         var allMessages = string.Join(" ", Messages.Select(m => m.Content));
-        var tokens = TokenHelper.Tokenize(allMessages);
+        var tokens = Cl100kTokenizer.Tokenize(allMessages);
 
-        var reconstructedMessage = string.Join("", tokens.Select(t => t.Item2));
+        var reconstructedMessage = string.Join("", tokens.Select(t => t.Value));
         if (allMessages != reconstructedMessage)
         {
             Debugger.Break();

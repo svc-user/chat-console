@@ -3,19 +3,21 @@ using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace chat_console.OpenAI
+namespace OpenAI
 {
-    internal class TokenHelper
+    public class Cl100kTokenizer
     {
         private static Dictionary<string, uint> _tokens = new Dictionary<string, uint>();
 
-        static TokenHelper()
+        static Cl100kTokenizer()
         {
-            using var sr = new StreamReader("./OpenAI/cl100k_base.tiktoken");
+            using var res = typeof(Cl100kTokenizer).Assembly.GetManifestResourceStream("OpenAI.cl100k_base.tiktoken")!;
+            using var sr = new StreamReader(res);
             string? line;
             while ((line = sr.ReadLine()) != null)
             {
@@ -33,9 +35,9 @@ namespace chat_console.OpenAI
             }
         }
 
-        public static List<(uint, string)> Tokenize(string input)
+        public static List<Token> Tokenize(string input)
         {
-            List<(uint, string)> tokens = new();
+            List<Token> tokens = new();
 
             int currentIndex = 0;
             int currentEnd = 0;
@@ -49,7 +51,7 @@ namespace chat_console.OpenAI
                 {
                     //Trace.WriteLine($"Found token: '{sub}'");
 
-                    tokens.Add((val, sub));
+                    tokens.Add(new Token { Value = sub, Id = val });
                     currentIndex += sub.Length;
                     currentEnd = 0;
 
@@ -63,5 +65,11 @@ namespace chat_console.OpenAI
 
             return tokens;
         }
+    }
+
+    public class Token
+    {
+        public uint Id { get; set; }
+        public string Value { get; set; } = string.Empty;
     }
 }

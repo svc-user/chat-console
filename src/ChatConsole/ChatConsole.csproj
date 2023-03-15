@@ -3,21 +3,18 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
-    <RootNamespace>chat_console</RootNamespace>
+    <RootNamespace>ChatConsole</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="OpenAI\cl100k_base.tiktoken" />
+    <Content Include="favicon.ico" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="favicon.ico" />
-    <Content Include="OpenAI\cl100k_base.tiktoken">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <ProjectReference Include="..\OpenAI\OpenAI.csproj" />
   </ItemGroup>
 
 </Project>
