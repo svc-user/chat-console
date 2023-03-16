@@ -37,8 +37,7 @@ namespace Tests
             var tokenizedArray = tokens.Select(t => t.Id).ToArray();
             uint[] tiktoken_encoding = new uint[] { 45, 4665, 6296, 13, 865, 4665, 6296, 13, 85380, 478, 6247, 26379 };
 
-            Assert.AreEqual(tiktoken_encoding.Length, tokenizedArray.Length);
-            Assert.AreEqual(string.Join(", ", tiktoken_encoding), string.Join(", ", tokenizedArray));
+            CollectionAssert.AreEqual(tiktoken_encoding, tokenizedArray);
         }
     }
 }

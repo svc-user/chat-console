@@ -56,7 +56,7 @@ public class ChatClient
         chatRequest.Messages.Add(userMessage);
 
         var tokens = chatRequest.CountMessagesTokens();
-        Trace.WriteLine($"Using {tokens} token on {chatRequest.Messages.Count} messages for request.");
+        Trace.WriteLine($"Using {tokens} tokens on {chatRequest.Messages.Count} messages for request.");
 
         var resp = await _apiClient.Post<ChatRequest, ChatResponse>("chat/completions", chatRequest);
 
@@ -65,6 +65,12 @@ public class ChatClient
             OnMessageError?.Invoke(resp?.Error);
             return;
         }
+
+        Trace.WriteLine($"Used {resp.Response.Usage.PromptTokens} prompt tokens.");
+        Trace.WriteLine($"Used {resp.Response.Usage.CompletionTokens} completion tokens.");
+        Trace.WriteLine($"Used {resp.Response.Usage.TotalTokens} total tokens.");
+
+
         _historyContext.Add(userMessage);
         _historyContext.AddRange(resp.Response.Choices.Select(c => c.Message));
         OnMessageReceived?.Invoke(resp.Response);

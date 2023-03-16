@@ -1,10 +1,12 @@
 ﻿
-using chat_console;
+using ChatConsole;
 using OpenAI;
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json.Serialization;
+
+namespace ChatConsole;
 
 internal class Program
 {
@@ -53,7 +55,7 @@ internal class Program
         while (true)
         {
             Console.Write(_settings.UserNamePadded + " " + _settings.PS1 + " ");
-            var prompt = Console.ReadLine();
+            var prompt = Console2.ReadInput();
             if (string.IsNullOrWhiteSpace(prompt))
             {
                 continue;
@@ -176,7 +178,7 @@ internal class Program
                 Console.Write("\n".PadRight(padding + 1));
                 col = 0;
             }
-            Thread.Sleep(4);
+            Thread.Sleep(1);
         }
         Console.WriteLine();
     }

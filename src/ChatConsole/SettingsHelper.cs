@@ -7,13 +7,13 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace chat_console
+namespace ChatConsole;
+
+internal class SettingsHelper
 {
-    internal class SettingsHelper
+    internal static void ShowHelp()
     {
-        internal static void ShowHelp()
-        {
-            Console.WriteLine(
+        Console.WriteLine(
 """
                 Welcome to the chat-console!! :)
 
@@ -45,127 +45,126 @@ namespace chat_console
                 * /quit or /exit
                     Close the console window.                
 """);
-        }
+    }
 
 
-        internal static void GetSettings(Settings settings, string key)
+    internal static void GetSettings(Settings settings, string key)
+    {
+        key = key == "*" ? string.Empty : key;
+
+        var props = settings.GetType().GetProperties();
+        foreach (var prop in props)
         {
-            key = key == "*" ? string.Empty : key;
+            if (prop.Name == "RequestParams") continue;
+            if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
 
-            var props = settings.GetType().GetProperties();
-            foreach (var prop in props)
+            if (prop.Name.Contains(key, StringComparison.OrdinalIgnoreCase))
             {
-                if (prop.Name == "RequestParams") continue;
-                if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
-
-                if (prop.Name.Contains(key, StringComparison.OrdinalIgnoreCase))
-                {
-                    var val = prop.GetValue(settings);
-                    Console.WriteLine("system".PadRight(settings.LongestName) + $" : {prop.PropertyType.Name} {prop.Name} = '{val}'");
-                }
+                var val = prop.GetValue(settings);
+                Console.WriteLine("system".PadRight(settings.LongestName) + $" : {prop.PropertyType.Name} {prop.Name} = '{val}'");
             }
-            Console.WriteLine("----");
-            var chatReqProps = settings.RequestParams.GetType().GetProperties();
-            foreach (var prop in chatReqProps)
-            {
-                if (prop.Name == "Messages") continue;
-                if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
-
-                if (prop.Name.Contains(key, StringComparison.OrdinalIgnoreCase))
-                {
-                    string propertyType = prop.PropertyType.Name;
-                    if (prop.PropertyType.GetGenericArguments().Length > 0)
-                    {
-                        propertyType = prop.PropertyType.GetGenericArguments()[0].Name;
-                    }
-
-                    var val = prop.GetValue(settings.RequestParams);
-                    Console.WriteLine("system".PadRight(settings.LongestName) + $" : {propertyType} {prop.Name} = '{val}'");
-                }
-            }
-
-
         }
-
-        internal static async Task SetSetting(Settings settings, string key, string value)
+        Console.WriteLine("----");
+        var chatReqProps = settings.RequestParams.GetType().GetProperties();
+        foreach (var prop in chatReqProps)
         {
-            var props = settings.GetType().GetProperties();
-            foreach (var prop in props)
+            if (prop.Name == "Messages") continue;
+            if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
+
+            if (prop.Name.Contains(key, StringComparison.OrdinalIgnoreCase))
             {
-                if (prop.Name == "RequestParams") continue;
-                if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
-
-                if (prop.Name.Equals(key, StringComparison.OrdinalIgnoreCase))
+                string propertyType = prop.PropertyType.Name;
+                if (prop.PropertyType.GetGenericArguments().Length > 0)
                 {
-                    var (ut, _) = GetUnderlyingType(prop.PropertyType);
-                    prop.SetValue(settings, Convert.ChangeType(value, ut));
-                    await settings.SaveAsync();
-                    GetSettings(settings, key);
+                    propertyType = prop.PropertyType.GetGenericArguments()[0].Name;
                 }
-            }
 
-
-            var chatReqProps = settings.RequestParams.GetType().GetProperties();
-            foreach (var prop in chatReqProps)
-            {
-                if (prop.Name == "Messages") continue;
-                if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
-
-                if (prop.Name.Equals(key, StringComparison.OrdinalIgnoreCase))
-                {
-                    var (ut, _) = GetUnderlyingType(prop.PropertyType);
-                    prop.SetValue(settings.RequestParams, Convert.ChangeType(value, ut));
-
-                    await settings.SaveAsync();
-                    GetSettings(settings, key);
-                }
+                var val = prop.GetValue(settings.RequestParams);
+                Console.WriteLine("system".PadRight(settings.LongestName) + $" : {propertyType} {prop.Name} = '{val}'");
             }
         }
 
-        internal static async Task ResetSetting(Settings settings, string key)
+
+    }
+
+    internal static async Task SetSetting(Settings settings, string key, string value)
+    {
+        var props = settings.GetType().GetProperties();
+        foreach (var prop in props)
         {
-            var props = settings.GetType().GetProperties();
-            foreach (var prop in props)
+            if (prop.Name == "RequestParams") continue;
+            if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
+
+            if (prop.Name.Equals(key, StringComparison.OrdinalIgnoreCase))
             {
-                if (prop.Name == "RequestParams") continue;
-                if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
-
-                if (prop.Name.Equals(key, StringComparison.OrdinalIgnoreCase))
-                {
-                    var (_, nullable) = GetUnderlyingType(prop.PropertyType);
-                    prop.SetValue(settings, nullable ? null : default);
-
-                    await settings.SaveAsync();
-                    GetSettings(settings, key);
-                }
-            }
-
-
-            var chatReqProps = settings.RequestParams.GetType().GetProperties();
-            foreach (var prop in chatReqProps)
-            {
-                if (prop.Name == "Messages") continue;
-                if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
-
-                if (prop.Name.Equals(key, StringComparison.OrdinalIgnoreCase))
-                {
-                    var (_, nullable) = GetUnderlyingType(prop.PropertyType);
-                    prop.SetValue(settings.RequestParams, nullable ? null : default);
-
-                    await settings.SaveAsync();
-                    GetSettings(settings, key);
-                }
+                var (ut, _) = GetUnderlyingType(prop.PropertyType);
+                prop.SetValue(settings, Convert.ChangeType(value, ut));
+                await settings.SaveAsync();
+                GetSettings(settings, key);
             }
         }
 
-        private static (Type, bool) GetUnderlyingType(Type type)
+
+        var chatReqProps = settings.RequestParams.GetType().GetProperties();
+        foreach (var prop in chatReqProps)
         {
-            if (type.GetGenericArguments().Length > 0)
-            {
-                return (type.GetGenericArguments()[0], true);
-            }
+            if (prop.Name == "Messages") continue;
+            if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
 
-            return (type, false);
+            if (prop.Name.Equals(key, StringComparison.OrdinalIgnoreCase))
+            {
+                var (ut, _) = GetUnderlyingType(prop.PropertyType);
+                prop.SetValue(settings.RequestParams, Convert.ChangeType(value, ut));
+
+                await settings.SaveAsync();
+                GetSettings(settings, key);
+            }
         }
+    }
+
+    internal static async Task ResetSetting(Settings settings, string key)
+    {
+        var props = settings.GetType().GetProperties();
+        foreach (var prop in props)
+        {
+            if (prop.Name == "RequestParams") continue;
+            if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
+
+            if (prop.Name.Equals(key, StringComparison.OrdinalIgnoreCase))
+            {
+                var (_, nullable) = GetUnderlyingType(prop.PropertyType);
+                prop.SetValue(settings, nullable ? null : default);
+
+                await settings.SaveAsync();
+                GetSettings(settings, key);
+            }
+        }
+
+
+        var chatReqProps = settings.RequestParams.GetType().GetProperties();
+        foreach (var prop in chatReqProps)
+        {
+            if (prop.Name == "Messages") continue;
+            if (prop.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
+
+            if (prop.Name.Equals(key, StringComparison.OrdinalIgnoreCase))
+            {
+                var (_, nullable) = GetUnderlyingType(prop.PropertyType);
+                prop.SetValue(settings.RequestParams, nullable ? null : default);
+
+                await settings.SaveAsync();
+                GetSettings(settings, key);
+            }
+        }
+    }
+
+    private static (Type, bool) GetUnderlyingType(Type type)
+    {
+        if (type.GetGenericArguments().Length > 0)
+        {
+            return (type.GetGenericArguments()[0], true);
+        }
+
+        return (type, false);
     }
 }
