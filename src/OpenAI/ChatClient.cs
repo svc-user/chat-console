@@ -88,16 +88,18 @@ public class ChatRequest
 
     public int CountMessagesTokens()
     {
-        var allMessages = string.Join(" ", Messages.Select(m => m.Content));
-        var tokens = Cl100kTokenizer.Tokenize(allMessages);
+        //var allMessages = string.Join(" ", Messages.Select(m => m.Content));
+        //var tokens = Cl100kTokenizer.EncodeNative(allMessages);
 
-        var reconstructedMessage = string.Join("", tokens.Select(t => t.Value));
-        if (allMessages != reconstructedMessage)
-        {
-            Debugger.Break();
-        }
+        //var reconstructedMessage = string.Join("", tokens);
+        //if (allMessages != reconstructedMessage)
+        //{
+        //    Debugger.Break();
+        //}
 
-        return tokens.Count;
+        //return tokens.Count;
+
+        return 0;
     }
 
     /// <summary>
