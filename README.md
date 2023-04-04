@@ -5,7 +5,7 @@ A console application to chat with ChatGPT using the OpenAI Chat API. Requires a
 ## Getting started
 First you'll need [an OpenAI account](https://platform.openai.com/signup), second you'll need [a paid account](https://platform.openai.com/account/billing/payment-methods) by adding a payment method and lastly you'll need to create [an API key](https://platform.openai.com/account/api-keys) to use with this application.
 
-At first run a [settings.json](https://github.com/bdoner/chat-console/master/README.md#the-settings-file) file is created. Set your `ApiKey` in that file and restart the application.
+At first run a [settings.json](https://github.com/bdoner/chat-console/blob/master/README.md#the-settings-file) file is created. Set your `ApiKey` in that file and restart the application.
 
 ## Help
 Run the command `/help` in the console to get help. The output is as follows:
