@@ -7,13 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="cl100k_base.tiktoken" />
+    <None Remove="Tiktoken\tiktoken.dll" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="cl100k_base.tiktoken">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <Folder Include="Tiktoken\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpToken" Version="1.0.25" />
   </ItemGroup>
 	
 

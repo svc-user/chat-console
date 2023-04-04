@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using OpenAI;
+using SharpToken;
 using Xunit;
 using Xunit.Sdk;
 
@@ -48,7 +49,9 @@ namespace Tests
         [DataRow("お誕生日おめでとう", new int[] { 33334, 45918, 243, 21990, 9080, 33334, 62004, 16556, 78699 })]
         public void TestEncodeNativeAccordingToPlaybook(string input, int[] expected)
         {
-            var tokens = Cl100kTokenizer.EncodeNative(input, new());
+            var encoding = GptEncoding.GetEncoding("cl100k_base");
+            var tokens = encoding.Encode(input);
+            //var tokens = Cl100kTokenizer.EncodeNative(input, new());
             var tokenizedArray = tokens.ToArray();
             CollectionAssert.AreEqual(expected, tokenizedArray);
         }

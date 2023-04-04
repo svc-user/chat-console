@@ -1,10 +1,10 @@
-﻿
-using ChatConsole;
-using OpenAI;
-using System.Collections;
+﻿using OpenAI;
+using OpenAI.Models;
 using System.Diagnostics;
-using System.Reflection;
-using System.Text.Json.Serialization;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 
 namespace ChatConsole;
 
@@ -15,171 +15,149 @@ internal class Program
     private static Settings _settings = null!;
     private static async Task MainAsync(string[] args)
     {
-        var settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".chat-console");
-        if (!Directory.Exists(settingsPath))
+        var settingsPathDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".chat-console");
+        if (!Directory.Exists(settingsPathDir))
         {
-            Directory.CreateDirectory(settingsPath);
+            Directory.CreateDirectory(settingsPathDir);
         }
-        settingsPath = Path.Combine(settingsPath, "settings.json");
+        var settingsPath = Path.Combine(settingsPathDir, "settings.json");
         _settings = await Settings.FromFile(settingsPath);
-        Console.Title = _settings.ConsoleTitle;
+        var client = new HttpApiClient(_settings.ApiKey);
 
-        Console.CancelKeyPress += Console_CancelKeyPress;
-
-
-        var apiClient = new ApiClient(_settings.ApiKey);
-        var chatClient = new ChatClient(apiClient);
-        chatClient.SetParams(_settings.RequestParams, _settings.ContextLength, _settings.SystemMessage);
-        chatClient.OnMessageError += async err =>
-        {
-            await Console.Error.WriteLineAsync();
-            await Console.Error.WriteLineAsync();
-            await Console.Error.WriteLineAsync("API ERR: Mesg: " + err?.Message);
-            await Console.Error.WriteLineAsync("API ERR: Type: " + err?.Type);
-            await Console.Error.WriteLineAsync("API ERR: Code: " + err?.Code);
-            await Console.Error.WriteLineAsync();
-        };
-        chatClient.OnMessageReceived += HandleMessageReceived;
-        await MainLoop(chatClient);
-    }
-
-    private static void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
-    {
-        e.Cancel = true;
-        Console.Write("\r".PadRight(80 + _settings.LongestName) + "\r"); // Clear line and return curser to start position.
-        Console.Write(_settings.UserNamePadded + " " + _settings.PS1 + " ");
-    }
-
-    private static async Task MainLoop(ChatClient chatClient)
-    {
+        List<ChatMessage> history = new();
+        List<ChatMessage> messages = new();
         while (true)
         {
-            Console.Write(_settings.UserNamePadded + " " + _settings.PS1 + " ");
+            Console.Write("prompt > ");
             var prompt = Console2.ReadInput();
-            if (string.IsNullOrWhiteSpace(prompt))
+
+            if (prompt.StartsWith("/"))
             {
-                continue;
-            }
-
-            if (await HandleBuiltinCommand(prompt, chatClient))
-            {
-                continue;
-            }
-
-
-            if (string.IsNullOrWhiteSpace(_settings.ApiKey))
-            {
-                Console.WriteLine("====================================================");
-                Console.WriteLine("No APIKey found. Set one first.");
-                Console.WriteLine("After setting one please restart the application.");
-                Console.WriteLine("====================================================");
-                Console.WriteLine();
-                SettingsHelper.ShowHelp();
-                continue;
-            }
-
-
-
-            Console.Write("Awaiting response...");
-            await chatClient.SendMessage(prompt);
-        }
-    }
-
-    private static async Task<bool> HandleBuiltinCommand(string prompt, ChatClient chatClient)
-    {
-        if (prompt == "/help")
-        {
-            SettingsHelper.ShowHelp();
-
-            return true;
-        }
-        else if (prompt == "/quit" || prompt == "/exit")
-        {
-            Environment.Exit(0);
-        }
-        else if (prompt.StartsWith("/get "))
-        {
-            SettingsHelper.GetSettings(_settings, prompt[5..]);
-            return true;
-        }
-        else if (prompt.StartsWith("/set "))
-        {
-            var key = prompt[5..].Split(" ")[0];
-            var keyIndex = prompt.IndexOf(key);
-            await SettingsHelper.SetSetting(_settings, key, prompt[(keyIndex + key.Length + 1)..]);
-
-            Console.Title = _settings.ConsoleTitle;
-            chatClient.SetParams(_settings.RequestParams, _settings.ContextLength, _settings.SystemMessage);
-
-            return true;
-        }
-        else if (prompt.StartsWith("/reset "))
-        {
-            var key = prompt[7..].Split(" ")[0];
-            await SettingsHelper.ResetSetting(_settings, key);
-
-            Console.Title = _settings.ConsoleTitle;
-            chatClient.SetParams(_settings.RequestParams, _settings.ContextLength, _settings.SystemMessage);
-
-            return true;
-        }
-        else if (prompt == "/clear")
-        {
-            Console.Clear();
-            return true;
-        }
-        else if (prompt == "/clearcontext")
-        {
-            chatClient.ClearContext();
-            Console.WriteLine("System".PadRight(_settings.LongestName) + ": Conversational context cleared.");
-            return true;
-        }
-
-        return false;
-    }
-
-    private static void HandleMessageReceived(ChatResponse chatResponse)
-    {
-        Console.Write("\r".PadRight(21 + _settings.LongestName) + "\r"); // Clear line and return curser to start position.
-
-        foreach (var choice in chatResponse.Choices)
-        {
-            if (chatResponse.Choices.Count > 1)
-            {
-                Console.WriteLine("".PadRight(_settings.LongestName, '-'));
-                Console.WriteLine($"Reply {choice.Index + 1} of {chatResponse.Choices.Count}");
-            }
-
-            Console.Write(_settings.BotNamePadded + " " + _settings.PS1 + " ");
-            var padLength = _settings.LongestName + 3;
-            var messageLines = choice.Message.Content.Split("\n");
-            bool first = true;
-            foreach (var line in messageLines)
-            {
-                if (!first)
+                if (prompt == "/help")
                 {
-                    Console.Write("".PadRight(padLength));
+                    ShowHelp();
+
                 }
-                first = false;
-                PrintLine(padLength, line);
+                else if (prompt == "/quit" || prompt == "/exit")
+                {
+                    Environment.Exit(0);
+                }
+                else if (prompt.StartsWith("/reset"))
+                {
+                    Console.WriteLine("SYSTEM: Conversational context cleared.");
+                    messages.Clear();
+                    history.Clear();
+
+                }
+                else if (prompt == "/clear")
+                {
+                    Console.Clear();
+                    history.Clear();
+
+                }
+                else if (prompt == "/export")
+                {
+                    var exportLogDir = Path.Combine(settingsPathDir, "Logs");
+                    if (!Directory.Exists(exportLogDir))
+                    {
+                        Directory.CreateDirectory(exportLogDir);
+                    }
+                    var exportFile = Path.Combine(exportLogDir, "Log_" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss") + ".txt");
+                    using (StreamWriter sw = new(exportFile, false))
+                    {
+                        foreach (var msg in history)
+                        {
+                            sw.WriteLine(msg.Role + ": " + msg.Content);
+                        }
+                    }
+                    Console.WriteLine("SYSTEM: Wrote conversation to " + exportFile);
+                }
+                continue;
             }
+
+            var userMessage = new ChatMessage { Role = "user", Content = prompt };
+            messages.Add(userMessage);
+            history.Add(userMessage);
+
+            var request = new ChatRequest();
+            request.Stream = true;
+
+            request.Messages.Clear();
+            request.Messages.AddRange(messages);
+
+            while (request.CountMessagesTokens() > 4096)
+            {
+                messages.RemoveAt(0);
+                if (prompt.Length == 0)
+                {
+                    Console.Error.WriteLine("SYSTEM: Message too big. Run /reset and retry.");
+                    break;
+                }
+
+                request.Messages.Clear();
+                request.Messages.AddRange(messages);
+            }
+
+            var webRequest = new HttpRequestMessage(HttpMethod.Post, "chat/completions");
+            webRequest.Content = JsonContent.Create<ChatRequest>(request, options: HttpApiClient.DefaultJsonOptions);
+            var response = await client.SendAsync(webRequest);
+
+            StringBuilder respMsg = new();
+            using StreamReader sr = new(await response.Content.ReadAsStreamAsync());
+            string? line;
+            while ((line = await sr.ReadLineAsync()) != null)
+            {
+                if (!line.StartsWith("data:")) continue;
+
+                line = line[5..];
+                if (line.Trim() == "[DONE]") break;
+
+                try
+                {
+                    var scr = JsonSerializer.Deserialize<StreamedChatResponse>(line, HttpApiClient.DefaultJsonOptions)!;
+                    Console.Write(scr.Choices[0].Delta.Content);
+                    respMsg.Append(scr.Choices[0].Delta.Content);
+                }
+                catch (Exception ex)
+                {
+                    Debugger.Break();
+                }
+            }
+            Console.WriteLine();
+            var assistantMessage = new ChatMessage { Role = "assistant", Content = respMsg.ToString() };
+            messages.Add(assistantMessage);
+            history.Add(assistantMessage);
+
         }
     }
 
-    private static void PrintLine(int padding, string message)
+    internal static void ShowHelp()
     {
-        int col = 0;
-        for (int i = 0; i < message.Length; i++, col++)
-        {
-            var ch = message[i];
-            Console.Write(ch);
-            if (col > 80 && ch == ' ')
-            {
-                Console.Write("\n".PadRight(padding + 1));
-                col = 0;
-            }
-            Thread.Sleep(1);
-        }
-        Console.WriteLine();
+        Console.WriteLine(
+"""
+                Welcome to the chat-console!! :)
+
+                Only a few commands are built in and all start with a forward-slash (/).
+                All other messages are sent directly to OpenAI for a response.
+
+                The built-in commands are:
+                Welcome to our chatbot! Here are the available commands to use:
+
+                - /help
+                    displays helpful information about the chatbot.
+
+                - /reset
+                    clears any previous chat context.
+
+                - /export
+                    exports the current chat history to a log.
+
+                - /clear
+                    clears the chat window.     
+
+                - /quit or /exit
+                    ends the conversation with the chatbot.
+                    
+""");
     }
 }

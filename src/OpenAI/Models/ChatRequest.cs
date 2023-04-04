@@ -1,105 +1,44 @@
-using System.Diagnostics;
-using System.Reflection.Metadata.Ecma335;
+﻿using SharpToken;
 using System.Text.Json.Serialization;
 
-namespace OpenAI;
-
-public class ChatClient
-{
-    private readonly ApiClient _apiClient;
-
-    private ChatRequest _requestParams = new();
-    private string _systemMessage = string.Empty;
-    private int _historyContextLength = 5;
-    private List<ChatMessage> _historyContext = new();
-
-    public delegate void MessageReceived(ChatResponse message);
-    public delegate void MessageError(ApiError? error);
-    public MessageReceived OnMessageReceived { get; set; } = null!;
-    public MessageError OnMessageError { get; set; } = null!;
-
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="apiClient"></param>
-    /// <param name="modelId"></param>
-    public ChatClient(ApiClient apiClient)
-    {
-        _apiClient = apiClient;
-    }
-
-    public void SetParams(ChatRequest requestParams, int historyContextLength = 5, string systemMessage = "")
-    {
-        requestParams.Messages.Clear();
-        _requestParams = requestParams;
-        _systemMessage = systemMessage;
-        _historyContextLength = historyContextLength;
-    }
-
-    public void ClearContext() => _historyContext.Clear();
-
-    public async Task SendMessage(string message)
-    {
-        var userMessage = new ChatMessage { Role = "user", Content = message };
-
-        var chatRequest = _requestParams.Clone();
-        if (!string.IsNullOrWhiteSpace(_systemMessage))
-        {
-            chatRequest.Messages.Add(new ChatMessage { Role = "system", Content = _systemMessage });
-        }
-        if (_historyContext.Count > _historyContextLength)
-        {
-            _historyContext = _historyContext.TakeLast(_historyContextLength).ToList();
-        }
-        chatRequest.Messages.AddRange(_historyContext);
-        chatRequest.Messages.Add(userMessage);
-
-        var tokens = chatRequest.CountMessagesTokens();
-        Trace.WriteLine($"Using {tokens} tokens on {chatRequest.Messages.Count} messages for request.");
-
-        var resp = await _apiClient.Post<ChatRequest, ChatResponse>("chat/completions", chatRequest);
-
-        if (!resp.Success)
-        {
-            OnMessageError?.Invoke(resp?.Error);
-            return;
-        }
-
-        Trace.WriteLine($"Used {resp.Response.Usage.PromptTokens} prompt tokens.");
-        Trace.WriteLine($"Used {resp.Response.Usage.CompletionTokens} completion tokens.");
-        Trace.WriteLine($"Used {resp.Response.Usage.TotalTokens} total tokens.");
-
-
-        _historyContext.Add(userMessage);
-        _historyContext.AddRange(resp.Response.Choices.Select(c => c.Message));
-        OnMessageReceived?.Invoke(resp.Response);
-    }
-}
+namespace OpenAI.Models;
 
 public class ChatRequest
 {
+
     public ChatRequest Clone()
     {
-        var req = (ChatRequest)this.MemberwiseClone();
+        var req = (ChatRequest)MemberwiseClone();
         req.Messages.Clear();
         return req;
     }
 
     public int CountMessagesTokens()
     {
-        //var allMessages = string.Join(" ", Messages.Select(m => m.Content));
-        //var tokens = Cl100kTokenizer.EncodeNative(allMessages);
+        int tokensPerMessage;
+        if (Model.StartsWith("gpt-3.5-turbo"))
+        {
+            tokensPerMessage = 5;
+        }
+        else if (Model.StartsWith("gpt-4"))
+        {
+            tokensPerMessage = 4;
+        }
+        else
+        {
+            tokensPerMessage = 5;
+        }
 
-        //var reconstructedMessage = string.Join("", tokens);
-        //if (allMessages != reconstructedMessage)
-        //{
-        //    Debugger.Break();
-        //}
+        var encoding = GptEncoding.GetEncoding("cl100k_base");
+        int totalTokens = 0;
+        foreach (var msg in Messages)
+        {
+            totalTokens += tokensPerMessage;
+            totalTokens += encoding.Encode(msg.Content).Count;
+        }
+        totalTokens += 3;
 
-        //return tokens.Count;
-
-        return 0;
+        return totalTokens;
     }
 
     /// <summary>
@@ -184,47 +123,4 @@ public class ChatRequest
     /// </summary>
     [JsonPropertyName("user")]
     public string? User { get; set; }
-}
-
-public class ChatMessage
-{
-    public string Role { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
-}
-
-public class ChatResponse
-{
-    public string Id { get; set; } = string.Empty;
-    public string Object { get; set; } = string.Empty;
-    public uint Created { get; set; }
-    public List<ChatResponseChoice> Choices { get; set; } = new List<ChatResponseChoice>();
-    public ChatResponseUsage Usage { get; set; } = new ChatResponseUsage();
-
-}
-
-public class ChatResponseChoice
-{
-    public int Index { get; set; }
-    public ChatMessage Message { get; set; } = new ChatMessage();
-    public FinishReason FinishReason { get; set; }
-}
-
-public class ChatResponseUsage
-{
-    [JsonPropertyName("prompt_tokens")]
-    public uint PromptTokens { get; set; }
-
-    [JsonPropertyName("completion_tokens")]
-    public uint CompletionTokens { get; set; }
-
-    [JsonPropertyName("total_tokens")]
-    public uint TotalTokens { get; set; }
-}
-
-public enum FinishReason
-{
-    Stop,
-    Length,
-    [JsonPropertyName("content_filter")] ContentFiler,
-    Null
 }
