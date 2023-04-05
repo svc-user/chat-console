@@ -12,11 +12,13 @@ Run the command `/help` in the console to get help. The output is as follows:
 
  Command | Description |
 | --- | --- |
-| `/help` | Displays helpful information about the chatbot. |
-| `/reset` | Clears any previous chat context. |
+| `/help` | displays helpful information about the chatbot. |
+| `/reset` | clear chat context. Start from scratch. |
 | `/export` | Exports the current chat history to a log. |
-| `/clear` | Clears the chat window. |
-| `/quit or /exit` | Ends the conversation with the chatbot. |
+| `/prompts`| list prompts stored in the Prompts directory. |
+| `/prompt <prompt file>`| select a prompt. Call with no promt-file to unset the prompt. |
+| `/clear` | clears the chat window. |
+| `/quit or /exit` | ends the conversation with the chatbot and close the bot. |
 
 ## The settings file
 Settings are persisted in a json-file located under `%USERPROFILE%/.chat-console/settings.json`.
@@ -26,8 +28,15 @@ The `RequestParams` settings parameter corresponds to the chat completion reques
 Other settings are local to the application.
 | Setting | Description |
 | --- | --- |
-| `SystemMessage` | If set, this string will be used to set the "system"-message for instructing the model as to what and how it should act. Read more about it [here.](https://platform.openai.com/docs/guides/chat/introduction) |
+| `SystemMessage` | If set, this string will be used to set the "system"-message for instructing the model as to what and how it should act. Read more about it [here.](https://platform.openai.com/docs/guides/chat/introduction). Can be set for a session by using the `/prompt` command. |
 | `ApiKey` | You API key. |
+
+## Logs
+Logs that have been generated with the `/export` command can be found under `%USERPROFILE%/.chat-console/Logs/`.
+
+## Prompts
+Prompts can be stored in the `%USERPROFILE%/.chat-console/Prompts/` directory.
+
 
 ## Todo
 - [x] Multiline input

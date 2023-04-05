@@ -204,16 +204,22 @@ internal class Program
                     displays helpful information about the chatbot.
 
                 - /reset
-                    clears any previous chat context.
+                    clear chat context. Start from scratch.
 
                 - /export
                     exports the current chat history to a log.
+
+                - /prompts
+                    list prompts stored in the Prompts directory.
+
+                - /prompt <prompt file>
+                    select a prompt. Call with no promt file to unset the prompt.
 
                 - /clear
                     clears the chat window.     
 
                 - /quit or /exit
-                    ends the conversation with the chatbot.
+                    ends the conversation with the chatbot and close the bot.
                     
 """);
     }
