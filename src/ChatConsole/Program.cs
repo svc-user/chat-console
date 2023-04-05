@@ -15,12 +15,12 @@ internal class Program
     private static Settings _settings = null!;
     private static async Task MainAsync(string[] args)
     {
-        var settingsPathDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".chat-console");
-        if (!Directory.Exists(settingsPathDir))
+        var workingDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".chat-console");
+        if (!Directory.Exists(workingDir))
         {
-            Directory.CreateDirectory(settingsPathDir);
+            Directory.CreateDirectory(workingDir);
         }
-        var settingsPath = Path.Combine(settingsPathDir, "settings.json");
+        var settingsPath = Path.Combine(workingDir, "settings.json");
         _settings = await Settings.FromFile(settingsPath);
         var client = new HttpApiClient(_settings.ApiKey);
 
@@ -57,7 +57,7 @@ internal class Program
                 }
                 else if (prompt == "/export")
                 {
-                    var exportLogDir = Path.Combine(settingsPathDir, "Logs");
+                    var exportLogDir = Path.Combine(workingDir, "Logs");
                     if (!Directory.Exists(exportLogDir))
                     {
                         Directory.CreateDirectory(exportLogDir);
@@ -72,6 +72,56 @@ internal class Program
                     }
                     Console.WriteLine("SYSTEM: Wrote conversation to " + exportFile);
                 }
+                else if (prompt == "/prompts")
+                {
+                    var promptDir = Path.Combine(workingDir, "Prompts");
+                    if (!Directory.Exists(promptDir))
+                    {
+                        Directory.CreateDirectory(promptDir);
+                    }
+                    Console.WriteLine("SYSTEM: Select a prompt calling `/prompt <promptname>`.");
+                    Console.WriteLine("SYSTEM: Unset the prompt using `/prompt` with no argument.");
+                    Console.WriteLine("SYSTEM: Available prompts:");
+                    var files = Directory.GetFiles(promptDir);
+                    foreach (var file in files)
+                    {
+                        var fileName = Path.GetFileName(file);
+                        Console.WriteLine("SYSTEM: \t" + fileName);
+                    }
+                }
+                else if (prompt.StartsWith("/prompt"))
+                {
+                    if (prompt.Trim() == "/prompt")
+                    {
+                        _settings.SystemMessage = "";
+                        Console.WriteLine("SYSTEM: Unset the prompt.");
+
+                    }
+                    else if (prompt.Split(" ").Length > 1)
+                    {
+                        var wantedPrompt = prompt.Split(" ", StringSplitOptions.RemoveEmptyEntries)[1];
+
+                        var promptDir = Path.Combine(workingDir, "Prompts");
+                        if (!Directory.Exists(promptDir))
+                        {
+                            Directory.CreateDirectory(promptDir);
+                        }
+                        var files = Directory.GetFiles(promptDir);
+                        foreach (var file in files)
+                        {
+                            var fileName = Path.GetFileName(file);
+                            if (fileName == wantedPrompt)
+                            {
+                                using (StreamReader promptReader = new(file))
+                                {
+                                    _settings.SystemMessage = await promptReader.ReadToEndAsync(); ;
+                                }
+                                Console.WriteLine("SYSTEM: Set the prompt to " + fileName);
+                            }
+                        }
+
+                    }
+                }
                 continue;
             }
 
@@ -83,12 +133,19 @@ internal class Program
             request.Stream = true;
 
             request.Messages.Clear();
+            if (!string.IsNullOrEmpty(_settings.SystemMessage))
+            {
+                var role = _settings.RequestParams.Model.Contains("gpt-4") ? "system" : "user";
+                var systemMessage = new ChatMessage { Role = role, Content = _settings.SystemMessage };
+                request.Messages.Add(systemMessage);
+            }
             request.Messages.AddRange(messages);
 
             while (request.CountMessagesTokens() > 4096)
             {
-                messages.RemoveAt(0);
-                if (prompt.Length == 0)
+                int removeIndex = !string.IsNullOrEmpty(_settings.SystemMessage) ? 1 : 0;
+                messages.RemoveAt(removeIndex);
+                if (prompt.Length == removeIndex)
                 {
                     Console.Error.WriteLine("SYSTEM: Message too big. Run /reset and retry.");
                     break;
@@ -103,9 +160,9 @@ internal class Program
             var response = await client.SendAsync(webRequest);
 
             StringBuilder respMsg = new();
-            using StreamReader sr = new(await response.Content.ReadAsStreamAsync());
+            using StreamReader responseReader = new(await response.Content.ReadAsStreamAsync());
             string? line;
-            while ((line = await sr.ReadLineAsync()) != null)
+            while ((line = await responseReader.ReadLineAsync()) != null)
             {
                 if (!line.StartsWith("data:")) continue;
 

@@ -43,16 +43,28 @@ namespace ChatConsole
             List<StringBuilder> lines = new() { new() };
             do
             {
-                var (left, top) = GetCalculatedCursorPos();
+                var (absLeft, _) = Console.GetCursorPosition();
+                var (left, _) = GetCalculatedCursorPos();
                 keyInfo = Console.ReadKey(true);
-                if (keyInfo.KeyChar <= 126 && 32 <= keyInfo.KeyChar)
+                if (keyInfo.KeyChar <= 126 && 32 <= keyInfo.KeyChar || (new char[] {'æ','ø','å' }.Contains(char.ToLowerInvariant(keyInfo.KeyChar))))
                 {
+                    if(absLeft == Console.BufferWidth - 1)
+                    {
+                        bufferIndex++;
+                        if (lines.Count - 1 < bufferIndex)
+                        {
+                            lines.Add(new());
+                        }
+                        left = 0;
+                        SetCalculatedCursorPos((left, bufferIndex));
+                    }
                     lines[bufferIndex].Insert(left, keyInfo.KeyChar);
-                    Console.Write(("\r" + (top == 0 ? "prompt > " : "") + lines[bufferIndex]).PadRight(Console.BufferWidth));
-                    SetCalculatedCursorPos((left + 1, top));
+                    Console.Write(("\r" + (bufferIndex == 0 ? "prompt > " : "") + lines[bufferIndex]).PadRight(Console.BufferWidth));
+                    SetCalculatedCursorPos((left + 1, bufferIndex));
                 }
                 else if (keyInfo.Key == ConsoleKey.Enter || keyInfo.Key == ConsoleKey.DownArrow)
                 {
+                    lines[bufferIndex].Append('\n');
                     bufferIndex++;
                     if (lines.Count - 1 < bufferIndex)
                     {
@@ -65,8 +77,18 @@ namespace ChatConsole
                     if (lines[bufferIndex].Length > 0)
                     {
                         lines[bufferIndex] = lines[bufferIndex].Remove(left - 1, 1);
-                        Console.Write(("\r" + (top == 0 ? "prompt > " : "") + lines[bufferIndex]).PadRight(Console.BufferWidth));
-                        SetCalculatedCursorPos((left - 1, top));
+                        Console.Write(("\r" + (bufferIndex == 0 ? "prompt > " : "") + lines[bufferIndex]).PadRight(Console.BufferWidth));
+                        SetCalculatedCursorPos((left - 1, bufferIndex));
+
+                    }
+                }
+                else if (keyInfo.Key == ConsoleKey.Delete)
+                {
+                    if (0 < lines[bufferIndex].Length && left < lines[bufferIndex].Length)
+                    {
+                        lines[bufferIndex] = lines[bufferIndex].Remove(left, 1);
+                        Console.Write(("\r" + (bufferIndex == 0 ? "prompt > " : "") + lines[bufferIndex]).PadRight(Console.BufferWidth));
+                        SetCalculatedCursorPos((left, bufferIndex));
 
                     }
                 }
@@ -105,7 +127,7 @@ namespace ChatConsole
             //    sb.AppendLine(line);
             //}
 
-            var prompt = string.Join("\n", lines.Select(sb => sb.ToString())).TrimEnd('\n');
+            var prompt = string.Join("", lines.Select(sb => sb.ToString())).TrimEnd('\n');
             Trace.WriteLine(prompt);
             return prompt;
         }
