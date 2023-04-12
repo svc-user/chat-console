@@ -2,9 +2,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace ChatConsole;
+namespace OpenAI;
 
-internal class Settings
+public class Settings
 {
     private static JsonSerializerOptions _defaultJsonOptions = new()
     {

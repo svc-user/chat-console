@@ -1,7 +1,6 @@
 ﻿using OpenAI;
 using OpenAI.Models;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -15,6 +14,9 @@ internal class Program
     private static Settings _settings = null!;
     private static async Task MainAsync(string[] args)
     {
+
+        Console.OutputEncoding = Encoding.UTF8;
+
         var workingDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".chat-console");
         if (!Directory.Exists(workingDir))
         {
@@ -130,6 +132,7 @@ internal class Program
             history.Add(userMessage);
 
             var request = new ChatRequest();
+            request.Model = _settings.RequestParams.Model;
             request.Stream = true;
 
             request.Messages.Clear();
@@ -143,9 +146,9 @@ internal class Program
 
             while (request.CountMessagesTokens() > 4096)
             {
-                int removeIndex = !string.IsNullOrEmpty(_settings.SystemMessage) ? 1 : 0;
-                messages.RemoveAt(removeIndex);
-                if (prompt.Length == removeIndex)
+                //int removeIndex = !string.IsNullOrEmpty(_settings.SystemMessage) ? 1 : 0;
+                messages.RemoveAt(0);
+                if (request.Messages.Count == 0)
                 {
                     Console.Error.WriteLine("SYSTEM: Message too big. Run /reset and retry.");
                     break;

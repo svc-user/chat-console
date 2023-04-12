@@ -11,6 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Models\Chat\" />
+    <Folder Include="Models\Api\" />
     <Folder Include="Tiktoken\" />
   </ItemGroup>
 

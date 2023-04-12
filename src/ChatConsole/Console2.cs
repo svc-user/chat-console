@@ -46,9 +46,9 @@ namespace ChatConsole
                 var (absLeft, _) = Console.GetCursorPosition();
                 var (left, _) = GetCalculatedCursorPos();
                 keyInfo = Console.ReadKey(true);
-                if (keyInfo.KeyChar <= 126 && 32 <= keyInfo.KeyChar || (new char[] {'æ','ø','å' }.Contains(char.ToLowerInvariant(keyInfo.KeyChar))))
+                if (keyInfo.Key != ConsoleKey.Enter && IsPrintable(keyInfo.KeyChar)) //keyInfo.KeyChar <= 126 && 32 <= keyInfo.KeyChar || (new char[] { 'æ', 'ø', 'å' }.Contains(char.ToLowerInvariant(keyInfo.KeyChar))))
                 {
-                    if(absLeft == Console.BufferWidth - 1)
+                    if (absLeft == Console.BufferWidth - 1)
                     {
                         bufferIndex++;
                         if (lines.Count - 1 < bufferIndex)
@@ -116,6 +116,15 @@ namespace ChatConsole
                         SetCalculatedCursorPos((Math.Min(lines[bufferIndex].Length, left), bufferIndex));
                     }
                 }
+                else if (keyInfo.Key == ConsoleKey.Home)
+                {
+                    SetCalculatedCursorPos((0, bufferIndex));
+                }
+                else if (keyInfo.Key == ConsoleKey.End)
+                {
+                    SetCalculatedCursorPos((lines[bufferIndex].Length, bufferIndex));
+                }
+
 
             } while (!(keyInfo.Key == ConsoleKey.Enter && (keyInfo.Modifiers & ConsoleModifiers.Control) == ConsoleModifiers.Control));
             Console.SetCursorPosition(0, topOffset + lines.Count);
@@ -130,6 +139,18 @@ namespace ChatConsole
             var prompt = string.Join("", lines.Select(sb => sb.ToString())).TrimEnd('\n');
             Trace.WriteLine(prompt);
             return prompt;
+        }
+
+        private static bool IsPrintable(char c)
+        {
+            return char.IsLetter(c) ||
+               char.IsLower(c) ||
+               char.IsUpper(c) ||
+               char.IsWhiteSpace(c) ||
+               char.IsPunctuation(c) ||
+               char.IsSymbol(c) ||
+               char.IsDigit(c) ||
+               char.IsNumber(c);
         }
     }
 }
