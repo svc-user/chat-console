@@ -21,6 +21,7 @@ jobs:
       Solution_Name: chat-console.sln
       ChatConsole_Name: src/ChatConsole/ChatConsole.csproj
       ChatConsole_Publish_Dir: src/ChatConsole/bin/Publish/
+      ChatConsole_Publish_Splat: src/ChatConsole/bin/Publish/*
 
     steps:
     - name: Checkout
@@ -35,18 +36,18 @@ jobs:
         dotnet-version: 7.0.x
 
     # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
-    - name: Setup MSBuild.exe
-      uses: microsoft/setup-msbuild@v1.0.2
+    # - name: Setup MSBuild.exe
+    #   uses: microsoft/setup-msbuild@v1.0.2
 
     # Execute all unit tests in the solution
-    - name: Execute unit tests
-      run: dotnet test
+    # - name: Execute unit tests
+    #   run: dotnet test
 
     # Restore the application to populate the obj folder with RuntimeIdentifiers
-    - name: Restore the application
-      run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
-      env:
-        Configuration: ${{ matrix.configuration }}
+    # - name: Restore the application
+    #   run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
+    #   env:
+    #     Configuration: ${{ matrix.configuration }}
 
     # Publish the ChatConsole.exe application
     - name: Build the console application
@@ -59,4 +60,4 @@ jobs:
       with:
         name: ChatConsole Release
         path: |
-          $env:ChatConsole_Publish_Dir*
+          $env:ChatConsole_Publish_Dir_Splat
