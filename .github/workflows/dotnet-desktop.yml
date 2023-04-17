@@ -2,9 +2,8 @@ name: .NET Core Console
 
 on:
   push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+    tags: 
+      - v*.*.*
 
 jobs:
 
@@ -62,6 +61,6 @@ jobs:
     - name: Store artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: ChatConsole Release
+        name: ChatConsole $GITHUB_REF_NAME
         path: D:\a\chat-console\chat-console\src\ChatConsole\bin\Publish
         if-no-files-found: error
