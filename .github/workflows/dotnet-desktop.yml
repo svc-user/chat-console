@@ -21,7 +21,6 @@ jobs:
       Solution_Name: chat-console.sln
       ChatConsole_Name: src/ChatConsole/ChatConsole.csproj
       ChatConsole_Publish_Dir: src/ChatConsole/bin/Publish/
-      ChatConsole_Publish_Splat: src/ChatConsole/bin/Publish/*
 
     steps:
     - name: Checkout
@@ -59,5 +58,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ChatConsole Release
-        path: |
-          $env:ChatConsole_Publish_Dir_Splat
+        path: $env:ChatConsole_Publish_Dir
