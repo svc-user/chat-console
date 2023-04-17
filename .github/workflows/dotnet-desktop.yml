@@ -59,4 +59,4 @@ jobs:
       with:
         name: ChatConsole Release
         path: |
-          ${env:ChatConsole_Publish_Dir}/*
+          $env:ChatConsole_Publish_Dir*
