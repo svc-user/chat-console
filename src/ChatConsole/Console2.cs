@@ -74,7 +74,7 @@ namespace ChatConsole
                 }
                 else if (keyInfo.Key == ConsoleKey.Backspace)
                 {
-                    if (lines[bufferIndex].Length > 0)
+                    if (lines[bufferIndex].Length > 0 && left > 0)
                     {
                         lines[bufferIndex] = lines[bufferIndex].Remove(left - 1, 1);
                         Console.Write(("\r" + (bufferIndex == 0 ? "prompt > " : "") + lines[bufferIndex]).PadRight(Console.BufferWidth));

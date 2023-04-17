@@ -14,8 +14,20 @@ internal class Program
     private static Settings _settings = null!;
     private static async Task MainAsync(string[] args)
     {
+        bool responseCancelled = false;
+        bool canCancelResponse = false;
 
         Console.OutputEncoding = Encoding.UTF8;
+        Console.CancelKeyPress += (obj, evt) =>
+        {
+            evt.Cancel = true;
+
+            if (canCancelResponse && !responseCancelled)
+            {
+                responseCancelled = true;
+                canCancelResponse = true;
+            }
+        };
 
         var workingDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".chat-console");
         if (!Directory.Exists(workingDir))
@@ -162,15 +174,22 @@ internal class Program
             webRequest.Content = JsonContent.Create<ChatRequest>(request, options: HttpApiClient.DefaultJsonOptions);
             var response = await client.SendAsync(webRequest);
 
+            canCancelResponse = true;
             StringBuilder respMsg = new();
             using StreamReader responseReader = new(await response.Content.ReadAsStreamAsync());
             string? line;
             while ((line = await responseReader.ReadLineAsync()) != null)
             {
+                if(canCancelResponse && responseCancelled)
+                {
+                    break;
+                }
+
                 if (!line.StartsWith("data:")) continue;
 
                 line = line[5..];
                 if (line.Trim() == "[DONE]") break;
+
 
                 try
                 {
@@ -182,11 +201,15 @@ internal class Program
                 {
                     Debugger.Break();
                 }
+
             }
             Console.WriteLine();
             var assistantMessage = new ChatMessage { Role = "assistant", Content = respMsg.ToString() };
             messages.Add(assistantMessage);
             history.Add(assistantMessage);
+
+            responseCancelled = false;
+            canCancelResponse = false;
 
         }
     }
