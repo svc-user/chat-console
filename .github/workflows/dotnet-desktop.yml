@@ -61,6 +61,6 @@ jobs:
     - name: Store artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: ChatConsole $GITHUB_REF_NAME
+        name: ChatConsole ${{ env.GITHUB_REF_NAME }}
         path: D:\a\chat-console\chat-console\src\ChatConsole\bin\Publish
         if-no-files-found: error
