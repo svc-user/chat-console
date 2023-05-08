@@ -156,18 +156,25 @@ internal class Program
             }
             request.Messages.AddRange(messages);
 
+            bool contextLimitReached = false;
             while (request.CountMessagesTokens() > 4096)
             {
-                //int removeIndex = !string.IsNullOrEmpty(_settings.SystemMessage) ? 1 : 0;
                 messages.RemoveAt(0);
-                if (request.Messages.Count == 0)
+                if (messages.Count == 0)
                 {
+                    contextLimitReached = true;
+
                     Console.Error.WriteLine("SYSTEM: Message too big. Run /reset and retry.");
                     break;
                 }
 
-                request.Messages.Clear();
+                int removeIndex = !string.IsNullOrEmpty(_settings.SystemMessage) ? 1 : 0;
+                request.Messages.RemoveRange(removeIndex, request.Messages.Count - removeIndex);
                 request.Messages.AddRange(messages);
+            }
+            if (contextLimitReached)
+            {
+                continue;
             }
 
             var webRequest = new HttpRequestMessage(HttpMethod.Post, "chat/completions");
@@ -177,10 +184,10 @@ internal class Program
             canCancelResponse = true;
             StringBuilder respMsg = new();
             using StreamReader responseReader = new(await response.Content.ReadAsStreamAsync());
-            string? line;
+            string? line = null;
             while ((line = await responseReader.ReadLineAsync()) != null)
             {
-                if(canCancelResponse && responseCancelled)
+                if (canCancelResponse && responseCancelled)
                 {
                     break;
                 }
