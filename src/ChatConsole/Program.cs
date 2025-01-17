@@ -24,6 +24,7 @@ internal class Program
 
             if (canCancelResponse && !responseCancelled)
             {
+                // This is very important! (I think)
                 responseCancelled = true;
                 canCancelResponse = true;
             }
